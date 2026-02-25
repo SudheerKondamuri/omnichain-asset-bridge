@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  chain-a:
+    image: foundryio/foundry:latest
+    command: anvil --host 0.0.0.0 --port 8545 --chain-id 1111
+    ports:
+      - "8545:8545"
+    healthcheck:
+      test: ["CMD", "curl", "-H", "Content-Type: application/json", "-X", "POST", "--data", '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}', "http://localhost:8545"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  chain-b:
+    image: foundryio/foundry:latest
+    command: anvil --host 0.0.0.0 --port 9545 --chain-id 2222
+    ports:
+      - "9545:9545"
+    healthcheck:
+      test: ["CMD", "curl", "-H", "Content-Type: application/json", "-X", "POST", "--data", '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}', "http://localhost:9545"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  relayer:
+    build: ./relayer
+    restart: on-failure
+    environment:
+      - CHAIN_A_RPC_URL=http://chain-a:8545
+      - CHAIN_B_RPC_URL=http://chain-b:9545
+      - DEPLOYER_PRIVATE_KEY=${DEPLOYER_PRIVATE_KEY}
+      - CONFIRMATION_DEPTH=${CONFIRMATION_DEPTH}
+      - DB_PATH=${DB_PATH}
+    volumes:
+      - ./relayer_data:/usr/src/app/data
+    depends_on:
+      chain-a:
+        condition: service_healthy
+      chain-b:
+        condition: service_healthy
