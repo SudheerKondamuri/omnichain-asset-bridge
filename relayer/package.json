@@ -1,0 +1,13 @@
+{
+    "name": "omnichain-bridge-relayer",
+    "version": "1.0.0",
+    "description": "Relayer Service for Asset Bridge",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "dependencies": {
+        "ethers": "^6.10.0",
+        "sqlite3": "^5.1.7"
+    }
+}
