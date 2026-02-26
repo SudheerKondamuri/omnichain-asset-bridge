@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract BridgeLock is Pausable, AccessControl {
     bytes32 public constant RELAYER_ROLE = keccak256("RELAYER_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
     IERC20 public immutable token;
     uint256 public nextNonce; 
@@ -16,10 +17,11 @@ contract BridgeLock is Pausable, AccessControl {
     event Locked(address indexed user, uint256 amount, uint256 nonce);
     event Unlocked(address indexed user, uint256 amount, uint256 nonce);
 
-    constructor(address _admin, address _relayer, address _token) {
+    constructor(address _token,address _admin, address _relayer, address _pauser) {
         token = IERC20(_token);
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         _grantRole(RELAYER_ROLE, _relayer);
+        _grantRole(PAUSER_ROLE, _pauser);
     }
 
     function lock(uint256 amount) external whenNotPaused {
@@ -46,11 +48,11 @@ contract BridgeLock is Pausable, AccessControl {
     }
 
     // Required for the Governance Recovery requirement
-    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function pause() external onlyRole(PAUSER_ROLE) {
         _pause();
     }
 
-    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function unpause() external onlyRole(PAUSER_ROLE) {
         _unpause();
     }
 }
