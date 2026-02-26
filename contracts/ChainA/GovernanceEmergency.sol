@@ -5,16 +5,13 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./interfaces/IBridgeLock.sol";
 
 
+
 contract GovernanceEmergency is AccessControl {
     bytes32 public constant RELAYER_ROLE = keccak256("RELAYER_ROLE");
-    
     IBridgeLock public immutable bridge;
-    
-    // Track processed proposals to prevent the Relayer from 
-    // re-pausing/unpausing with the same vote
-    mapping(uint256 => bool) public processedProposals;
 
-    event EmergencyActionExecuted(uint256 indexed proposalId, string action);
+    // sourceChainId => proposalId => executed
+    mapping(uint256 => mapping(uint256 => bool)) public processedProposals;
 
     constructor(address _bridge, address _relayer) {
         bridge = IBridgeLock(_bridge);
@@ -22,28 +19,19 @@ contract GovernanceEmergency is AccessControl {
         _grantRole(RELAYER_ROLE, _relayer);
     }
 
-    /**
-     * @dev Called by the Relayer when a "Pause" proposal passes on Chain B.
-     * @param proposalId The ID from GovernanceVoting.sol on Chain B.
-     */
-    function executePause(uint256 proposalId) external onlyRole(RELAYER_ROLE) {
-        require(!processedProposals[proposalId], "Proposal already executed");
-        processedProposals[proposalId] = true;
+    function executeAction(uint256 proposalId, uint256 sourceChainId, uint8 action) 
+        external 
+        onlyRole(RELAYER_ROLE) 
+    {
+        require(!processedProposals[sourceChainId][proposalId], "Proposal already executed");
+        processedProposals[sourceChainId][proposalId] = true;
 
-        bridge.pause();
-        
-        emit EmergencyActionExecuted(proposalId, "PAUSE");
-    }
-
-    /**
-     * @dev Called by the Relayer when an "Unpause" proposal passes on Chain B.
-     */
-    function executeUnpause(uint256 proposalId) external onlyRole(RELAYER_ROLE) {
-        require(!processedProposals[proposalId], "Proposal already executed");
-        processedProposals[proposalId] = true;
-
-        bridge.unpause();
-        
-        emit EmergencyActionExecuted(proposalId, "UNPAUSE");
+        if (action == 0) {
+            bridge.pause();
+        } else if (action == 1) {
+            bridge.unpause();
+        } else {
+            revert("Invalid action");
+        }
     }
 }
