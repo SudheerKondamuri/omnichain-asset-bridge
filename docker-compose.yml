@@ -15,7 +15,7 @@ services:
 
   # Deploy contracts to both chains, then write addresses.json to shared volume
   deployer:
-    image: node:18-alpine
+    image: node:20-alpine
     working_dir: /app
     volumes:
       - .:/app
