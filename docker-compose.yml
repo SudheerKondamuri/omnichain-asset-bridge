@@ -2,26 +2,34 @@ version: '3.8'
 
 services:
   chain-a:
-    image: foundryio/foundry:latest
-    command: anvil --host 0.0.0.0 --port 8545 --chain-id 1111
+    image: ghcr.io/foundry-rs/foundry:latest
+    entrypoint: ["anvil", "--host", "0.0.0.0", "--port", "8545", "--chain-id", "1111"]
     ports:
       - "8545:8545"
-    healthcheck:
-      test: ["CMD", "curl", "-H", "Content-Type: application/json", "-X", "POST", "--data", '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}', "http://localhost:8545"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   chain-b:
-    image: foundryio/foundry:latest
-    command: anvil --host 0.0.0.0 --port 9545 --chain-id 2222
+    image: ghcr.io/foundry-rs/foundry:latest
+    entrypoint: ["anvil", "--host", "0.0.0.0", "--port", "9545", "--chain-id", "2222"]
     ports:
       - "9545:9545"
-    healthcheck:
-      test: ["CMD", "curl", "-H", "Content-Type: application/json", "-X", "POST", "--data", '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}', "http://localhost:9545"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+
+  # Deploy contracts to both chains, then write addresses.json to shared volume
+  deployer:
+    image: node:18-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+      - deployer_modules:/app/node_modules
+      - relayer_data:/data
+    environment:
+      - CHAIN_A_RPC_URL=http://chain-a:8545
+      - CHAIN_B_RPC_URL=http://chain-b:9545
+      - DEPLOYER_PRIVATE_KEY=${DEPLOYER_PRIVATE_KEY:-0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80}
+      - DATA_PATH=/data/addresses.json
+    command: sh -c "sleep 10 && npm install --ignore-scripts && node scripts/deploy.js"
+    depends_on:
+      - chain-a
+      - chain-b
 
   relayer:
     build: ./relayer
@@ -29,13 +37,20 @@ services:
     environment:
       - CHAIN_A_RPC_URL=http://chain-a:8545
       - CHAIN_B_RPC_URL=http://chain-b:9545
-      - DEPLOYER_PRIVATE_KEY=${DEPLOYER_PRIVATE_KEY}
-      - CONFIRMATION_DEPTH=${CONFIRMATION_DEPTH}
-      - DB_PATH=${DB_PATH}
+      - DEPLOYER_PRIVATE_KEY=${DEPLOYER_PRIVATE_KEY:-0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80}
+      - CONFIRMATION_DEPTH=${CONFIRMATION_DEPTH:-3}
+      - DB_PATH=/usr/src/app/data/relayer.db
+      - ADDRESSES_PATH=/usr/src/app/data/addresses.json
     volumes:
-      - ./relayer_data:/usr/src/app/data
+      - relayer_data:/usr/src/app/data
     depends_on:
+      deployer:
+        condition: service_completed_successfully
       chain-a:
-        condition: service_healthy
+        condition: service_started
       chain-b:
-        condition: service_healthy
+        condition: service_started
+
+volumes:
+  relayer_data:
+  deployer_modules:
