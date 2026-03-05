@@ -1,3 +1,4 @@
+import 'dotenv/config'; // must be first — populates process.env before anything else reads it
 import { defineChain, createPublicClient, createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import * as fs from 'fs';

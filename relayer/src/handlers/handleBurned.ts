@@ -17,16 +17,24 @@ export async function handleBurned(
     txHash: `0x${string}`,
     blockNumber: bigint,
 ): Promise<void> {
-    const nonceNum = Number(nonce);
+    // 0. Validate destination — reject events not intended for Chain A
+    if (destinationChainId !== BigInt(config.chainA.chainId)) {
+        logger.warn(
+            `[handleBurned] Ignored: destinationChainId=${destinationChainId} is not Chain A (${config.chainA.chainId})`
+        );
+        return;
+    }
+
+    const nonceStr = nonce.toString();
     const sourceChainId = config.chainB.chainId;
 
     logger.info(
-        `[handleBurned] user=${user} amount=${amount} nonce=${nonceNum} destChain=${destinationChainId} tx=${txHash}`
+        `[handleBurned] user=${user} amount=${amount} nonce=${nonceStr} destChain=${destinationChainId} tx=${txHash}`
     );
 
     // 1. Idempotency check
-    if (checkIfProcessed(nonceNum, sourceChainId, 'Burned')) {
-        logger.info(`[handleBurned] nonce=${nonceNum} already processed — skipping`);
+    if (checkIfProcessed(nonceStr, sourceChainId, 'Burned')) {
+        logger.info(`[handleBurned] nonce=${nonceStr} already processed — skipping`);
         return;
     }
 
@@ -47,6 +55,6 @@ export async function handleBurned(
     });
 
     // 4. Persist
-    markAsProcessed(nonceNum, sourceChainId, 'Burned', txHash);
-    logger.info(`[handleBurned] Successfully processed nonce=${nonceNum}`);
+    markAsProcessed(nonceStr, sourceChainId, 'Burned', txHash);
+    logger.info(`[handleBurned] Successfully processed nonce=${nonceStr}`);
 }

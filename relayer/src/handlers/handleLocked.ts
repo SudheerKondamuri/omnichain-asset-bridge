@@ -17,16 +17,24 @@ export async function handleLocked(
     txHash: `0x${string}`,
     blockNumber: bigint,
 ): Promise<void> {
-    const nonceNum = Number(nonce);
+    // 0. Validate destination — reject events not intended for Chain B
+    if (destinationChainId !== BigInt(config.chainB.chainId)) {
+        logger.warn(
+            `[handleLocked] Ignored: destinationChainId=${destinationChainId} is not Chain B (${config.chainB.chainId})`
+        );
+        return;
+    }
+
+    const nonceStr = nonce.toString();
     const sourceChainId = config.chainA.chainId;
 
     logger.info(
-        `[handleLocked] user=${user} amount=${amount} nonce=${nonceNum} destChain=${destinationChainId} tx=${txHash}`
+        `[handleLocked] user=${user} amount=${amount} nonce=${nonceStr} destChain=${destinationChainId} tx=${txHash}`
     );
 
     // 1. Check if already processed (idempotent)
-    if (checkIfProcessed(nonceNum, sourceChainId, 'Locked')) {
-        logger.info(`[handleLocked] nonce=${nonceNum} already processed — skipping`);
+    if (checkIfProcessed(nonceStr, sourceChainId, 'Locked')) {
+        logger.info(`[handleLocked] nonce=${nonceStr} already processed — skipping`);
         return;
     }
 
@@ -48,6 +56,6 @@ export async function handleLocked(
     });
 
     // 4. Mark as processed in DB
-    markAsProcessed(nonceNum, sourceChainId, 'Locked', txHash);
-    logger.info(`[handleLocked] Successfully processed nonce=${nonceNum}`);
+    markAsProcessed(nonceStr, sourceChainId, 'Locked', txHash);
+    logger.info(`[handleLocked] Successfully processed nonce=${nonceStr}`);
 }

@@ -15,16 +15,16 @@ export async function handleProposal(
     txHash: `0x${string}`,
     blockNumber: bigint,
 ): Promise<void> {
-    const pidNum = Number(proposalId);
+    const pidStr = proposalId.toString();
     const sourceChainId = config.chainB.chainId;
 
     logger.info(
-        `[handleProposal] proposalId=${pidNum} action=${action} tx=${txHash}`
+        `[handleProposal] proposalId=${pidStr} action=${action} tx=${txHash}`
     );
 
     // 1. Idempotency check
-    if (checkIfProposalProcessed(pidNum, sourceChainId)) {
-        logger.info(`[handleProposal] proposalId=${pidNum} already processed — skipping`);
+    if (checkIfProposalProcessed(pidStr, sourceChainId)) {
+        logger.info(`[handleProposal] proposalId=${pidStr} already processed — skipping`);
         return;
     }
 
@@ -50,6 +50,6 @@ export async function handleProposal(
     });
 
     // 4. Persist
-    markProposalAsProcessed(pidNum, sourceChainId, txHash);
-    logger.info(`[handleProposal] Successfully executed proposalId=${pidNum}`);
+    markProposalAsProcessed(pidStr, sourceChainId, txHash);
+    logger.info(`[handleProposal] Successfully executed proposalId=${pidStr}`);
 }
