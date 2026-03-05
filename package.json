@@ -13,5 +13,21 @@
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.0",
     "ethers": "^6.0.0"
-  }
+  },
+  "main": "hardhat.config.js",
+  "directories": {
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SudheerKondamuri/omnichain-asset-bridge.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/SudheerKondamuri/omnichain-asset-bridge/issues"
+  },
+  "homepage": "https://github.com/SudheerKondamuri/omnichain-asset-bridge#readme"
 }
