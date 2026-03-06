@@ -35,18 +35,20 @@ async function deploy(deployer, artifact, args = []) {
 async function deployChainA(rpcUrl, privateKey) {
     console.log(`\n[Chain A] Connecting to ${rpcUrl}…`);
     const provider = new ethers.JsonRpcProvider(rpcUrl);
-    const deployer = new ethers.Wallet(privateKey, provider);
-    console.log(`[Chain A] Deployer: ${deployer.address}`);
+    const baseWallet = new ethers.Wallet(privateKey, provider);
+    const deployer = new ethers.NonceManager(baseWallet); // <--- THIS KILLS THE RACE CONDITION
+    const deployerAddress = await deployer.getAddress();
+    console.log(`[Chain A] Deployer: ${deployerAddress}`);
 
     // 1. VaultToken (mints 1 000 000 VTK to deployer)
-    const vaultToken = await deploy(deployer, VaultTokenArt, [deployer.address]);
+    const vaultToken = await deploy(deployer, VaultTokenArt, [deployerAddress]);
     const vaultTokenAddr = await vaultToken.getAddress();
     console.log(`[Chain A] VaultToken deployed:  ${vaultTokenAddr}`);
 
     // 2. BridgeLock — relayer = deployer for local dev
     const bridgeLock = await deploy(deployer, BridgeLockArt, [
         vaultTokenAddr,
-        deployer.address, // relayer address
+        deployerAddress, // relayer address
         1111,             // chainId
     ]);
     const bridgeLockAddr = await bridgeLock.getAddress();
@@ -56,7 +58,7 @@ async function deployChainA(rpcUrl, privateKey) {
     //    We deploy GovernanceEmergency first, then grant.
     const govEmergency = await deploy(deployer, GovEmergencyArt, [
         bridgeLockAddr,
-        deployer.address, // relayer address
+        deployerAddress, // relayer address
     ]);
     const govEmergencyAddr = await govEmergency.getAddress();
     console.log(`[Chain A] GovernanceEmergency: ${govEmergencyAddr}`);
@@ -78,8 +80,10 @@ async function deployChainA(rpcUrl, privateKey) {
 async function deployChainB(rpcUrl, privateKey) {
     console.log(`\n[Chain B] Connecting to ${rpcUrl}…`);
     const provider = new ethers.JsonRpcProvider(rpcUrl);
-    const deployer = new ethers.Wallet(privateKey, provider);
-    console.log(`[Chain B] Deployer: ${deployer.address}`);
+    const baseWallet = new ethers.Wallet(privateKey, provider);
+    const deployer = new ethers.NonceManager(baseWallet); // <--- THIS KILLS THE RACE CONDITION
+    const deployerAddress = await deployer.getAddress();
+    console.log(`[Chain B] Deployer: ${deployerAddress}`);
 
     // 1. WrappedVaultToken
     const wrappedVT = await deploy(deployer, WrappedVTArt);
@@ -89,7 +93,7 @@ async function deployChainB(rpcUrl, privateKey) {
     // 2. BridgeMint
     const bridgeMint = await deploy(deployer, BridgeMintArt, [
         wrappedVTAddr,
-        deployer.address, // relayer address
+        deployerAddress, // relayer address
         2222,             // chainId
     ]);
     const bridgeMintAddr = await bridgeMint.getAddress();

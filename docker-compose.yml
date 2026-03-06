@@ -19,14 +19,13 @@ services:
     working_dir: /app
     volumes:
       - .:/app
-      - deployer_modules:/app/node_modules
       - relayer_data:/data
     environment:
       - CHAIN_A_RPC_URL=http://chain-a:8545
       - CHAIN_B_RPC_URL=http://chain-b:9545
       - DEPLOYER_PRIVATE_KEY=${DEPLOYER_PRIVATE_KEY:-0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80}
       - DATA_PATH=/data/addresses.json
-    command: sh -c "sleep 10 && npm install --ignore-scripts && node scripts/deploy.js"
+    command: sh -c "sleep 10 && node scripts/deploy.js"
     depends_on:
       - chain-a
       - chain-b
@@ -53,4 +52,3 @@ services:
 
 volumes:
   relayer_data:
-  deployer_modules:
