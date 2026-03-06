@@ -7,7 +7,10 @@ contract GovernanceVoting {
     IVotes public immutable token;
 
     // 0 = PAUSE, 1 = UNPAUSE
-    enum Action { PAUSE, UNPAUSE }
+    enum Action {
+        PAUSE,
+        UNPAUSE
+    }
 
     struct Proposal {
         string description;
@@ -27,11 +30,16 @@ contract GovernanceVoting {
 
     // Adjust these for your specific demo needs
     uint256 public constant VOTING_DURATION = 1 hours;
-    uint256 public constant QUORUM = 1000 * 10**18;
+    uint256 public constant QUORUM = 1000 * 10 ** 18;
 
     // Relayer listens for this. 'uint8 action' matches the executor's parameter.
     event ProposalPassed(uint256 indexed id, uint8 action);
-    event ProposalCreated(uint256 indexed id, string description, Action action, uint256 deadline);
+    event ProposalCreated(
+        uint256 indexed id,
+        string description,
+        Action action,
+        uint256 deadline
+    );
 
     constructor(address _token) {
         token = IVotes(_token);
@@ -41,7 +49,10 @@ contract GovernanceVoting {
      * @dev Creates a proposal to either Pause or Unpause the bridge on Chain A.
      * Snapshots the current block so voting power is fixed at proposal creation time.
      */
-    function createProposal(string calldata description, Action action) external {
+    function createProposal(
+        string calldata description,
+        Action action
+    ) external {
         uint256 id = proposalCount++;
         proposals[id] = Proposal({
             description: description,
